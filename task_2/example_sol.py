@@ -75,7 +75,7 @@ def reset_example():
 
 
 def quering_example():
-    dataset = torch.load(...)                   # Path to ModelStealingPub.pt
+    dataset = torch.load("ModelStealingPub.pt")
     images = [dataset.imgs[idx] for idx in np.random.permutation(1000)]
 
     image_data = []
