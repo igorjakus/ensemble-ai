@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import models
+import time
 
 from adversary import fgsm_attack, pgd_attack
 
@@ -84,6 +85,7 @@ class Resnet18(nn.Module):
         best_loss = float('inf')
 
         for epoch in range(epochs):
+            start_time = time.time()
             for batch_idx, batch in enumerate(dataloader):
                 idxs, imgs, labels = batch
                 imgs, labels = imgs.to(self.device), labels.to(self.device)
@@ -109,7 +111,9 @@ class Resnet18(nn.Module):
                 total_loss.backward()
                 self.optimizer.step()
 
-            print(f"Epoch [{epoch+1}/{epochs}], Loss: {total_loss.item():.4f}")
+            end_time = time.time()
+            epoch_duration = end_time - start_time
+            print(f"Epoch [{epoch+1}/{epochs}], Loss: {total_loss.item():.4f}, Duration: {epoch_duration:.2f} seconds")
 
             if total_loss < best_loss:
                 best_loss = total_loss
