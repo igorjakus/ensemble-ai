@@ -28,7 +28,7 @@ print(f"Using device: {device}")
 
 
 resnet = Resnet18(num_classes=num_classes, device=device)
-resnet.load_state_dict(torch.load("resnet18_best.pth", map_location=torch.device('cuda')))
+resnet.load_state_dict(torch.load(f"{resnet.model_name}.pth", map_location=torch.device('cuda')))
 resnet.evaluate(test_loader)
 resnet.train(dev_loader, epochs=20)
 resnet.evaluate(test_loader)

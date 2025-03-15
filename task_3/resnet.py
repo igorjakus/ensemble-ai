@@ -117,7 +117,7 @@ class Resnet18(nn.Module):
 
             if total_loss < best_loss:
                 best_loss = total_loss
-                torch.save(self.model.state_dict(), f"{self.model_name}_best.pth")
+                torch.save(self.model.state_dict(), f"{self.model_name}.pth")
         
         torch.save(self.model.state_dict(), f"{self.model_name}.pth")
         print("Training finished!")
