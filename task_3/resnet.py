@@ -20,7 +20,7 @@ class Resnet18(nn.Module):
         self.device = device
         self.model = self.model.to(self.device)
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=1e-3, weight_decay=1e-4)
         self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, x):
@@ -80,7 +80,7 @@ class Resnet18(nn.Module):
         
         # make sure the model is in training mode
         self.model.train()
-        
+
         best_loss = float('inf')
 
         for epoch in range(epochs):
