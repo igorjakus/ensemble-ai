@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torchvision import models
 from tqdm.notebook import tqdm
 
-from task_dataset import load_dataset, TaskDataset, shuffle  # noqa !!! don't remove this line
+from task_dataset import load_dataset, TaskDataset  # noqa !!! don't remove this line
 from adversary import fgsm_attack, pgd_attack
 
 
@@ -14,19 +14,17 @@ from adversary import fgsm_attack, pgd_attack
 dataset = load_dataset('Train.pt')
 num_classes = len(set(dataset.labels))
 
-# shuffle the dataset
-# shuffle(dataset)
-
 train_size = int(0.8 * len(dataset))
 test_size = int(0.1 * len(dataset))
 dev_size = len(dataset) - train_size - test_size
 
-# TODO: czy to na pewno poprawnie dziala?
+# TODO: upewnić się, że jest faktycznie losowo podzielony
 train_dataset, test_dataset, dev_dataset = torch.utils.data.random_split(
     dataset, [train_size, test_size, dev_size])
+print(f"Train: {len(train_dataset)}, Test: {len(test_dataset)}, Dev: {len(dev_dataset)}")
 
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=0)
-test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=0)
+train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, num_workers=0)
+test_loader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=0)
 dev_loader = DataLoader(dev_dataset, batch_size=256, shuffle=False, num_workers=0)
 
 
@@ -38,7 +36,7 @@ print(f"Using device: {device}")
 class Resnet18(nn.Module):
     def __init__(self):
         super(Resnet18, self).__init__()
-        self.model = models.resnet18(pretrained=True)  # TODO: czy pretrained
+        self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)  # TODO: może warto większy
         self.model_name = "resnet18"
         self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
         self.model = self.model.to(device)
@@ -133,11 +131,14 @@ def train(model: Resnet18, dataloader: DataLoader, num_epochs: int):
 
             if batch_idx % 10 == 0:
                 print(f"Epoch [{epoch+1}/{num_epochs}], Step [{batch_idx+1}/{len(dataloader)}], Loss: {total_loss.item():.4f}")
+
+        torch.save(model.state_dict(), f"{model.model_name}_best.pth")
     
     print("Training finished!")
 
 
 model = Resnet18()
+model.load_state_dict(torch.load("resnet18_best.pth", map_location=torch.device('cuda')))
 evaluate(model, test_loader)
-train(model, dev_loader, 1)
+train(model, dev_loader, 20)
 evaluate(model, test_loader)
