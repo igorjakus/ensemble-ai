@@ -1,13 +1,14 @@
 import torch
 
 
-def fgsm_attack(model, images, labels, epsilon=0.1) -> torch.Tensor:
+def fgsm_attack(resnet, images, labels, epsilon=0.1) -> torch.Tensor:
     # Make sure gradients are calculated
     images.requires_grad = True
-    
+    model = resnet.model
+
     # Forward pass
     outputs = model(images)
-    loss = model.criterion(outputs, labels)
+    loss = resnet.criterion(outputs, labels)
     
     # Backward pass
     model.zero_grad()
@@ -25,15 +26,17 @@ def fgsm_attack(model, images, labels, epsilon=0.1) -> torch.Tensor:
     
     return perturbed_images
 
-def pgd_attack(model, images, labels, epsilon=0.1, alpha=0.01, num_iter=10) -> torch.Tensor:
+
+def pgd_attack(resnet, images, labels, epsilon=0.1, alpha=0.01, num_iter=10) -> torch.Tensor:
     perturbed_images = images.clone().detach()
+    model = resnet.model
     
     for i in range(num_iter):
         perturbed_images.requires_grad = True
         
         # Forward pass
         outputs = model(perturbed_images)
-        loss = model.criterion(outputs, labels)
+        loss = resnet.criterion(outputs, labels)
         
         # Backward pass
         if perturbed_images.grad is not None:
