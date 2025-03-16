@@ -32,7 +32,7 @@ resnet = Resnet18(num_classes=num_classes, device=device)
 
 # Load saved model if exists
 try:
-    state_dict = torch.load('resnet18.pth')
+    state_dict = torch.load('trained/resnet18.pt')
     resnet.model.load_state_dict(state_dict)
     print("Loaded saved model.")
 except Exception as e:
@@ -41,5 +41,5 @@ except Exception as e:
 
 # Train model
 # resnet.train(dev_loader, epochs=2)
+resnet.evaluate(test_loader)
 resnet.train(train_loader, epochs=60)
-# resnet.evaluate(test_loader)

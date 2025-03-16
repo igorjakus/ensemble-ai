@@ -80,7 +80,7 @@ class Resnet18(nn.Module):
             'train_losses': [], 'clean_losses': [], 'fgsm_losses': [], 'pgd_losses': []
         }
         
-        for epoch in range(epochs):
+        for epoch in range(1, epochs + 1):
             start_time = time.time()
 
             self.model.train()
@@ -133,15 +133,16 @@ class Resnet18(nn.Module):
             metrics['pgd_losses'].append(avg_pgd_loss)
             
             end_time = time.time()
-            print(f"{epoch=} /{epochs} | {avg_loss=:.4f} | {avg_clean_loss=} | {avg_fgsm_loss} | {avg_pgd_loss} | time: {end_time-start_time:.2f}s")
+            print(f"{epoch=} /{epochs} | {avg_loss=:.4f} | {avg_clean_loss=:.4f} | {avg_fgsm_loss=:.4f} | {avg_pgd_loss=:.4f} | time: {int(end_time-start_time)}s")
 
             # Save model and metrics to the file
-            torch.save(self.model.state_dict(), f"{self.model_name}_epoch_{epoch+1}.pth")
-            torch.save(metrics, f"{self.model_name}_metrics_epoch_{epoch+1}.pth")
+            torch.save(self.model.state_dict(), f"trained/{self.model_name}_epoch_{epoch+1}.pt")
+            torch.save(metrics, f"trained/{self.model_name}_metrics_epoch_{epoch+1}.pt")
 
         # Save final model and metrics
-        torch.save(self.model.state_dict(), f"{self.model_name}.pth")
-        torch.save(metrics, f"{self.model_name}_metrics.pth")
+        torch.save(self.model.state_dict(), f"trained/{self.model_name}.pt")
+        torch.save(metrics, f"trained/{self.model_name}_metrics.pt")
+        print(f"Model saved to trained/{self.model_name}.pt")
         
         return metrics
 
@@ -156,4 +157,4 @@ class Resnet18(nn.Module):
             losses.append(loss)
 
         metrics = {'lrs': lrs, 'losses': losses}
-        torch.save(metrics, f"{self.model_name}_lr_search.pth")
+        torch.save(metrics, f"trained/{self.model_name}_lr_search.pt")

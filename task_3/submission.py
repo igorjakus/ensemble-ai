@@ -5,7 +5,7 @@ import os
 from torchvision import models
 
 
-TOKEN = "tJ5sArUK4buksYLos5WwYW8EMBbVUy"
+TOKEN = "nema_tokena"
 URL = "149.156.182.9:6060/task-3/submit"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
