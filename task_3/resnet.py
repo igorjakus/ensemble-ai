@@ -11,8 +11,6 @@ from adversary import fgsm_attack, pgd_attack
 class Resnet18(nn.Module):
     def __init__(self, num_classes=10, device=torch.device("cpu")):
         super(Resnet18, self).__init__()
-        # TODO: może warto zwiększyć do Resnet50
-        # TODO: może bez wag domyślnych??
         self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
         self.model_name = "resnet18"
         self.model.fc = nn.Linear(self.model.fc.in_features, num_classes)
@@ -67,25 +65,30 @@ class Resnet18(nn.Module):
         print(f"{accuracy_clean=:.2f}%")
         print(f"{accuracy_fgsm=:.2f}%")
         print(f"{accuracy_pgd=:.2f}%")
-        
+
         return accuracy_clean, accuracy_fgsm, accuracy_pgd
 
 
     def train(self, dataloader: DataLoader, epochs: int):
-        # hyperparameters 
-        # TODO: find best hyperparameters (+ learning rate)
+        # hyperparameters
         epsilon = 0.1
         alpha = 0.01
-        iters = 10
-        a_clear, a_fgsm, a_pgd = 0.6, 0.25, 0.25
+        iters = 5
+        a_clear, a_fgsm, a_pgd = 0.4, 0.3, 0.3  # zrównoważone wagi
         
-        # make sure the model is in training mode
-        self.model.train()
-
-        best_loss = float('inf')
-
+        metrics = {
+            'train_losses': [], 'clean_losses': [], 'fgsm_losses': [], 'pgd_losses': []
+        }
+        
         for epoch in range(epochs):
             start_time = time.time()
+
+            self.model.train()
+            epoch_loss = 0.0
+            clean_loss_sum = 0.0
+            fgsm_loss_sum = 0.0
+            pgd_loss_sum = 0.0
+            
             for batch_idx, batch in enumerate(dataloader):
                 idxs, imgs, labels = batch
                 imgs, labels = imgs.to(self.device), labels.to(self.device)
@@ -93,31 +96,72 @@ class Resnet18(nn.Module):
                 # Standard forward pass
                 outputs = self.model(imgs)
                 loss = self.criterion(outputs, labels)
+                clean_loss_sum += loss.item()
                 
                 # FGSM Attack
                 adv_inputs = fgsm_attack(self, imgs, labels, epsilon)
                 adv_outputs = self.model(adv_inputs)
                 adv_loss = self.criterion(adv_outputs, labels)
+                fgsm_loss_sum += adv_loss.item()
                 
                 # PGD Attack
                 pgd_inputs = pgd_attack(self, imgs, labels, epsilon, alpha, iters)
                 pgd_outputs = self.model(pgd_inputs)
                 pgd_loss = self.criterion(pgd_outputs, labels)
+                pgd_loss_sum += pgd_loss.item()
                 
                 # Total loss
                 total_loss = a_clear * loss + a_fgsm * adv_loss + a_pgd * pgd_loss
-                
+
+                # Backward pass
                 self.optimizer.zero_grad()
                 total_loss.backward()
                 self.optimizer.step()
-
+                
+                epoch_loss += total_loss.item()
+                
             end_time = time.time()
-            epoch_duration = end_time - start_time
-            print(f"Epoch [{epoch+1}/{epochs}], Loss: {total_loss.item():.4f}, Duration: {epoch_duration:.2f} seconds")
+            print("Epoch: {}/{} | Loss: {:.4f} | Time: {:.2f}s".format(
+                epoch+1, epochs, total_loss.item(), end_time-start_time))
 
-            if total_loss < best_loss:
-                best_loss = total_loss
-                torch.save(self.model.state_dict(), f"{self.model_name}.pth")
+            # Calculate average losses
+            avg_loss = epoch_loss / len(dataloader)
+            avg_clean_loss = clean_loss_sum / len(dataloader)
+            avg_fgsm_loss = fgsm_loss_sum / len(dataloader)
+            avg_pgd_loss = pgd_loss_sum / len(dataloader)
+            
+            # Save metrics
+            metrics['train_losses'].append(avg_loss)
+            metrics['clean_losses'].append(avg_clean_loss)
+            metrics['fgsm_losses'].append(avg_fgsm_loss)
+            metrics['pgd_losses'].append(avg_pgd_loss)
+            
+            print(f"{epoch=} | {avg_loss=:.4f} | {avg_clean_loss=} | {avg_fgsm_loss} | {avg_pgd_loss} | time: {end_time-start_time:.2f}s")
+
+            # Save model every 5 epochs
+            if epoch % 5 == 0:
+                torch.save({
+                    'model_state_dict': self.model.state_dict(),
+                    'metrics': metrics,
+                }, f"{self.model_name}_yolo.pth")
+
+        # Save final model with metrics
+        torch.save({
+            'model_state_dict': self.model.state_dict(),
+            'metrics': metrics,
+        }, f"{self.model_name}_yolo.pth")
         
-        torch.save(self.model.state_dict(), f"{self.model_name}.pth")
-        print("Training finished!")
+        return metrics
+
+    def try_lrs(self, dataloader: DataLoader):
+        lre = torch.linspace(-4, 0, 200)
+        lrs = 10**lre
+        losses = []
+
+        for lr in lrs:
+            self.optimizer = optim.AdamW(self.model.parameters(), lr=lr, weight_decay=1e-4)
+            loss = self.train(dataloader, 1)
+            losses.append(loss)
+
+        metrics = {'lrs': lrs, 'losses': losses}
+        torch.save(metrics, "lrs.pth")
