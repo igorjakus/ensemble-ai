@@ -32,12 +32,14 @@ resnet = Resnet18(num_classes=num_classes, device=device)
 
 # Load saved model if exists
 try:
-    resnet.load_state_dict(torch.load('resnet18.pth'))
+    state_dict = torch.load('resnet18.pth')
+    resnet.model.load_state_dict(state_dict)
     print("Loaded saved model.")
-except FileNotFoundError:
-    print("No saved model found.")
+except Exception as e:
+    print(e)
+    print("Model not loaded.")
 
 # Train model
-resnet.train(dev_loader, epochs=2)
-# resnet.train(train_loader, epochs=60)
+# resnet.train(dev_loader, epochs=2)
+resnet.train(train_loader, epochs=60)
 # resnet.evaluate(test_loader)

@@ -119,10 +119,6 @@ class Resnet18(nn.Module):
                 self.optimizer.step()
                 
                 epoch_loss += total_loss.item()
-                
-            end_time = time.time()
-            print("Epoch: {}/{} | Loss: {:.4f} | Time: {:.2f}s".format(
-                epoch+1, epochs, total_loss.item(), end_time-start_time))
 
             # Calculate average losses
             avg_loss = epoch_loss / len(dataloader)
@@ -136,20 +132,16 @@ class Resnet18(nn.Module):
             metrics['fgsm_losses'].append(avg_fgsm_loss)
             metrics['pgd_losses'].append(avg_pgd_loss)
             
-            print(f"{epoch=} | {avg_loss=:.4f} | {avg_clean_loss=} | {avg_fgsm_loss} | {avg_pgd_loss} | time: {end_time-start_time:.2f}s")
+            end_time = time.time()
+            print(f"{epoch=} /{epochs} | {avg_loss=:.4f} | {avg_clean_loss=} | {avg_fgsm_loss} | {avg_pgd_loss} | time: {end_time-start_time:.2f}s")
 
-            # Save model every 5 epochs
-            if epoch % 5 == 0:
-                torch.save({
-                    'model_state_dict': self.model.state_dict(),
-                    'metrics': metrics,
-                }, f"{self.model_name}_yolo.pth")
+            # Save model and metrics to the file
+            torch.save(self.model.state_dict(), f"{self.model_name}_epoch_{epoch+1}.pth")
+            torch.save(metrics, f"{self.model_name}_metrics_epoch_{epoch+1}.pth")
 
-        # Save final model with metrics
-        torch.save({
-            'model_state_dict': self.model.state_dict(),
-            'metrics': metrics,
-        }, f"{self.model_name}_yolo.pth")
+        # Save final model and metrics
+        torch.save(self.model.state_dict(), f"{self.model_name}.pth")
+        torch.save(metrics, f"{self.model_name}_metrics.pth")
         
         return metrics
 
@@ -164,4 +156,4 @@ class Resnet18(nn.Module):
             losses.append(loss)
 
         metrics = {'lrs': lrs, 'losses': losses}
-        torch.save(metrics, "lrs.pth")
+        torch.save(metrics, f"{self.model_name}_lr_search.pth")
