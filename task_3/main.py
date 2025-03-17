@@ -41,5 +41,5 @@ except Exception as e:
 
 # Train model
 # resnet.train(dev_loader, epochs=2)
+resnet.train(train_loader, epochs=2)
 resnet.evaluate(test_loader)
-resnet.train(train_loader, epochs=60)

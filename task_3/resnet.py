@@ -19,7 +19,7 @@ class Resnet18(nn.Module):
         self.device = device
         self.model = self.model.to(self.device)
 
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=1e-3, weight_decay=1e-4)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=4 * 1e-3, weight_decay=1e-4)
         self.criterion = nn.CrossEntropyLoss()
 
     def forward(self, x):
@@ -74,7 +74,7 @@ class Resnet18(nn.Module):
         epsilon = 0.1
         alpha = 0.01
         iters = 5
-        a_clear, a_fgsm, a_pgd = 0.4, 0.3, 0.3  # zrównoważone wagi
+        a_clear, a_fgsm, a_pgd = 0.6, 0.2, 0.2  # zrównoważone wagi
         
         metrics = {
             'train_losses': [], 'clean_losses': [], 'fgsm_losses': [], 'pgd_losses': []
@@ -133,7 +133,7 @@ class Resnet18(nn.Module):
             metrics['pgd_losses'].append(avg_pgd_loss)
             
             end_time = time.time()
-            print(f"{epoch=} /{epochs} | {avg_loss=:.4f} | {avg_clean_loss=:.4f} | {avg_fgsm_loss=:.4f} | {avg_pgd_loss=:.4f} | time: {int(end_time-start_time)}s")
+            print(f"{epoch=}/{epochs} | {avg_loss=:.4f} | {avg_clean_loss=:.4f} | {avg_fgsm_loss=:.4f} | {avg_pgd_loss=:.4f} | time: {int(end_time-start_time)}s")
 
             # Save model and metrics to the file
             torch.save(self.model.state_dict(), f"trained/{self.model_name}_epoch_{epoch+1}.pt")
@@ -143,7 +143,7 @@ class Resnet18(nn.Module):
         torch.save(self.model.state_dict(), f"trained/{self.model_name}.pt")
         torch.save(metrics, f"trained/{self.model_name}_metrics.pt")
         print(f"Model saved to trained/{self.model_name}.pt")
-        
+
         return metrics
 
     def try_lrs(self, dataloader: DataLoader):
