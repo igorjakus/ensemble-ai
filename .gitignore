@@ -1,1 +1,5 @@
 .DS_Store
+__pycache__/
+data/
+task_3/Train.pt
+atena.txt
