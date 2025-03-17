@@ -1,4 +1,5 @@
 .DS_Store
+ModelStealingPub.pt
 __pycache__/
 data/
 task_3/Train.pt
